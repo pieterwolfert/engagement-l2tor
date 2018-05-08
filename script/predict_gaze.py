@@ -3,6 +3,7 @@ import numpy as np
 import scipy.io as sio
 from scipy.misc import imresize
 from skimage.io import imread
+from skimage.transform import resize
 from math import exp
 
 def predict_gaze(img, e, net):
@@ -132,55 +133,72 @@ def predict_gaze(img, e, net):
     hm = np.zeros((15, 15))
 
     f_0_0 = np.reshape(f_0_0(0,:), (5,5), order="F")
-    
+    f_0_0 = np.math.exp(alpha*f_0_0/np.math.exp(alpha*np.sum(f_0_0)))
+
+    f_1_0 = np.reshape(f_1_0(0,:), (5,5), order="F")
+    f_1_0 = np.math.exp(alpha*f_1_0)/np.sum(np.math.exp(alpha*np.sum(f_1_0)))
+
+    f_m1_0 = np.reshape(f_m1_0(0,:), (5,5), order="F")
+    f_m1_0 = np.math.exp(alpha*f_m1_0)/np.sum(np.math.exp(alpha*np.sum(f_m1_0)))
+
+    f_0_m1 = np.reshape(fc_0_m1(0,:), (5,5), order="F")
+    f_0_m1 = np.exp(alpha*f_0_m1) / np.sum(np.exp(alpha*np.sum(f_0_m1)))
+
+    f_0_1 = np.reshape(fc_0_1(0,:), (5,5), order="F")
+
+    f_0_1 = np.exp(alpha*f_0_1) / np.sum(np.exp(alpha*np.sum(f_0_1)))
+
+    f_cell = [f_0_0,f_1_0,f_m1_0,f_0_m1,f_0_1]
+    v_x = [0, 1, -1, 0, 0]
+    v_y = [0, 0, 0, -1, 1]
+
     #done till here
-    f_0_0 = exp(alpha*f_0_0)/exp(alpha*f_0_0(:)).sum()
-
-    f_1_0= reshape(fc_1_0(1,:),[5 5]);
-    f_1_0 = exp(alpha*f_1_0)/sum(exp(alpha*f_1_0(:)));
-    f_m1_0 = reshape(fc_m1_0(1,:),[5 5]);
-    f_m1_0 = exp(alpha*f_m1_0)/sum(exp(alpha*f_m1_0(:)));
-    f_0_m1 =reshape(fc_0_m1(1,:),[5 5]);
-    f_0_m1 = exp(alpha*f_0_m1)/sum(exp(alpha*f_0_m1(:)));
-    f_0_1 = reshape(fc_0_1(1,:),[5 5]);
-    f_0_1 = exp(alpha*f_0_1)/sum(exp(alpha*f_0_1(:)));
-
-    f_cell = {f_0_0,f_1_0,f_m1_0,f_0_m1,f_0_1};
-    v_x = [0 1 -1 0 0];
-    v_y = [0 0 0 -1 1];
-
 
     for k in range(5):
-        delta_x = v_x(k)
-        delta_y = v_y(k)
-        f = f_cell(k)
-        for x in mslice[1:5]:
-            for y in mslice[1:5]:
+        delta_x = v_x[k]
+        delta_y = v_y[k]
+        f = f_cell[k]
+        for x in range(5):
+            for y in range(5):
                 i_x = 1 + 3 * (x - 1) - delta_x
-                i_x = max(i_x, 1); print i_x
+                i_x = np.max(i_x, 1)
+                print(i_x)
                 if (x == 1):
                     i_x = 1
                 i_y = 1 + 3 * (y - 1) - delta_y
-                i_y = max(i_y, 1); print i_y
+                i_y = np.max(i_y, 1)
+                print(i_y)
                 if (y == 1):
                     i_y = 1
                 f_x = 3 * x - delta_x
-                f_x = min(15, f_x); print f_x
+                f_x = np.min(15, f_x)
+                print(f_x)
                 if (x == 5):
                     f_x = 15
                 f_y = 3 * y - delta_y
-                f_y = min(15, f_y); print f_y
+                f_y = np.min(15, f_y)
+                print(f_y)
                 if (y == 5):
                     f_y = 15
-                hm(mslice[i_x:f_x], mslice[i_y:f_y]).lvalue = hm(mslice[i_x:f_x], mslice[i_y:f_y]) + f(x, y)
-                count_hm(mslice[i_x:f_x], mslice[i_y:f_y]).lvalue = count_hm(mslice[i_x:f_x], mslice[i_y:f_y]) + 1
-    hm_base = hm /eldiv/ count_hm
-    hm_results = imresize(hm_base.cT, mcat([size(img, 1), size(img, 2)]), mstring('bicubic'))
-    [maxval, idx] = max(hm_results(mslice[:]))
-    [row, col] = ind2sub(size(hm_results), idx)
-    y_predict = row / size(hm_results, 1)
-    x_predict = col / size(hm_results, 2)
+                hm[i_x:f_x, i_y:f_y] = hm[i_x:f_x, i_y:f_y] + f[x,y]
+                count_hm[i_x:f_x, i_y:f_y] = count_hm[i_x:f_x, i_y:f_y] + 1
+
+
+    hm_base = hm / count_hm
+    hm_results = resize(hm_base, (np.shape(img[0]), np.shape(img[1]))
+
+    [maxval, idx] = np.maximum(hm_results)
+    [row, col] = ind2sub(np.shape(hm_results), idx)
+    y_predict = row / np.shape(hm_results[0])
+    x_predict = col / np.shape(hm_results[1])
 
 if __name__=="__main__":
     caffe.set_device(0)
     caffe.set_mode_gpu()
+
+def ind2sub(array_shape, ind):
+    ind[ind < 0] = -1
+    ind[ind >= array_shape[0]*array_shape[1]] = -1
+    rows = (ind.astype('int') / array_shape[1])
+    cols = ind % array_shape[1]
+    return (rows, cols)
