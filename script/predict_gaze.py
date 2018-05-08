@@ -6,33 +6,30 @@ from skimage.io import imread
 from skimage.transform import resize
 from math import exp
 
-def predict_gaze(img, e, net):
-    network = caffe.Net('/home/pieter/projects/engagement\
-            -l2tor/data/model/deploy_demo.prototxt', \
+def predict_gaze(img, e):
+    network = caffe.Net('/home/pieter/projects/engagement-l2tor/data/model/deploy_demo.prototxt', \
             '/home/pieter/projects/engagement-l2tor/data/model/binary_w.caffemodel',\
             caffe.TEST)
-    #s = RandStream(mstring('mt19937ar'), mstring('Seed'), sum(10000 * clock))
-    #RandStream.setGlobalStream(s)
     np.random.seed(1)
     np.random.rand()
-    #filelist = cell(1, 3)
-    filelist = np.zeros((1,3))
-    filelist[:, 0] = img
-    #filelist(mslice[:], 1).lvalue = mcellarray([img])
+    filelist = []
+    filelist.append(img)
     alpha = 0.3
     w_x = np.floor(alpha * img.shape[1])
     w_y = np.floor(alpha * img.shape[0])
+    w_x = int(w_x)
+    w_y = int(w_y)
 
     if (w_x % 2 == 0):
         w_x = w_x + 1
     if (w_y % 2 == 0):
         w_y = w_y + 1
     im_face = np.ones((w_y, w_x, 3))
-    im_face[:,:,1] = 123*np.ones((w_y,w_x))
-    im_face[:,:,2] = 117*np.ones((w_y,w_x))
-    im_face[:,:,3] = 104*np.ones((w_y,w_x))
+    im_face[:,:,0] = 123*np.ones((w_y,w_x))
+    im_face[:,:,1] = 117*np.ones((w_y,w_x))
+    im_face[:,:,2] = 104*np.ones((w_y,w_x))
 
-    center = np.floor([e[0]*img.shape[1] e[1]*img.shape[0]])
+    center = np.floor([e[0]*img.shape[1],e[1]*img.shape[0]])
 
     d_x = np.floor((w_x-1)/2)
     d_y = np.floor((w_y-1)/2)
@@ -59,19 +56,20 @@ def predict_gaze(img, e, net):
         delta_t_y = w_y - (top_y - img.shape[0])
         top_y = img.shape[0]
 
-    im_face[delta_b_y:delta_t_y,delta_b_x:delta_t_x,:] = img[bottom_y:top_y,bottom_x:top_x,:]
-    filelist[:,1] = im_face
 
-    im_face[delta_b_y:delta_t_y,delta_b_x:delta_t_x,:] = img[bottom_y:top_y,bottom_x:top_x,:]
-    filelist[:,2] = im_face
+    im_face[delta_b_y:delta_t_y , delta_b_x:delta_t_x,:] = img[int(bottom_y):int(top_y),int(bottom_x):int(top_x),:]
+    filelist.append(im_face)
+
+    im_face[delta_b_y:delta_t_y,delta_b_x:delta_t_x,:] = img[int(bottom_y):int(top_y),int(bottom_x):int(top_x),:]
+    filelist.append(im_face)
 
     f = np.zeros((1, 1, 169))
     z = np.zeros((13,13))
     x = np.floor(e[0] * 13) + 1
     y = np.floor(e[1] * 13) + 1
-    z[x,y] = 1
-    f[1,1]= z[:]
-    filelist[:3,] = f
+    z[int(x),int(y)] = 1
+    f[0,0,:]= z.flatten(1)
+    filelist.append(f)
 
     use_gpu = 1
     device_id = 0
@@ -81,29 +79,30 @@ def predict_gaze(img, e, net):
     caffe.set_mode_gpu()
     caffe.set_device(0)
 
-    places_mean_resize = sio.loadmat('places_mean_resize.mat')
-    imagenet_mean_resize = sio.loadmat('imagenet_mean_resize.mat')
+    places_mean_resize = sio.loadmat('data/model/places_mean_resize.mat')
+    imagenet_mean_resize = sio.loadmat('data/model/imagenet_mean_resize.mat')
 
     image_mean_cell = [places_mean_resize, imagenet_mean_resize, places_mean_resize]
     input_dim_all = [1,3, 227, 227, 1, 3, 227, 227, 1, 169, 1, 1]
 
-    ims = np.zeros((filelis[1], 1))
+    ims = np.zeros((len(filelist), 1))
 
-    for j in range(3):
-        filelist_i = filelist[0, j]
+    #tested untill here
+
+    for j in range(1,4):
+        filelist_i = filelist[j]
         filelist_i = filelist_i[0]
-        input_dim = input_dim_all[1+(j-1)*4:j*4]
-        b = np.zeros((1,1))
-        img_size = [input_dim[3], input_dim[4], input_dim[2]];
-        image_mean = image_mean_cell[j]
+        input_dim = input_dim_all[0+(j-1)*4:j*4]
 
+        b = np.zeros((1,1))
+        img_size = [input_dim[2], input_dim[3], input_dim[1]]
+        image_mean = image_mean_cell[j]['image_mean']
         if transform_data[j]:
             tmp = image_mean
-            image_mean = np.array([image_mean], dtype=np.uint8)
-            image_mean = imresize(image_mean, [img_size[0] img_size[1]])
+            image_mean = imresize(image_mean, (img_size[0], img_size[1]))
             #done till here
             img = np.zeros((image_mean.shape[0], image_mean.shape[1], 3))
-
+            print(filelist_i.shape)
             if filelist_i.isalpha():
                 img = imread(filelist_i)
             else:
@@ -117,7 +116,7 @@ def predict_gaze(img, e, net):
             img = img.take([2,1,0], axis=2)-image_mean;
             b[0] = np.transpose(np.expand_dims(img, axis=3), (1, 0, 2))
         else:
-            b[0] filelist_i
+            b[0] = filelist_i
         b = np.concatenate((4, b))
         ims[j] = b
 
@@ -132,19 +131,19 @@ def predict_gaze(img, e, net):
     hm = np.zeros((15, 15))
     hm = np.zeros((15, 15))
 
-    f_0_0 = np.reshape(f_0_0(0,:), (5,5), order="F")
+    f_0_0 = np.reshape(f_0_0[0,], (5,5), order="F")
     f_0_0 = np.math.exp(alpha*f_0_0/np.math.exp(alpha*np.sum(f_0_0)))
 
-    f_1_0 = np.reshape(f_1_0(0,:), (5,5), order="F")
+    f_1_0 = np.reshape(f_1_0[0,], (5,5), order="F")
     f_1_0 = np.math.exp(alpha*f_1_0)/np.sum(np.math.exp(alpha*np.sum(f_1_0)))
 
-    f_m1_0 = np.reshape(f_m1_0(0,:), (5,5), order="F")
+    f_m1_0 = np.reshape(f_m1_0[0,], (5,5), order="F")
     f_m1_0 = np.math.exp(alpha*f_m1_0)/np.sum(np.math.exp(alpha*np.sum(f_m1_0)))
 
-    f_0_m1 = np.reshape(fc_0_m1(0,:), (5,5), order="F")
+    f_0_m1 = np.reshape(fc_0_m1[0,], (5,5), order="F")
     f_0_m1 = np.exp(alpha*f_0_m1) / np.sum(np.exp(alpha*np.sum(f_0_m1)))
 
-    f_0_1 = np.reshape(fc_0_1(0,:), (5,5), order="F")
+    f_0_1 = np.reshape(fc_0_1[0,], (5,5), order="F")
 
     f_0_1 = np.exp(alpha*f_0_1) / np.sum(np.exp(alpha*np.sum(f_0_1)))
 
@@ -182,23 +181,24 @@ def predict_gaze(img, e, net):
                     f_y = 15
                 hm[i_x:f_x, i_y:f_y] = hm[i_x:f_x, i_y:f_y] + f[x,y]
                 count_hm[i_x:f_x, i_y:f_y] = count_hm[i_x:f_x, i_y:f_y] + 1
-
-
     hm_base = hm / count_hm
-    hm_results = resize(hm_base, (np.shape(img[0]), np.shape(img[1]))
+    hm_results = resize(hm_base, (np.shape(img[0]), np.shape(img[1])))
 
     [maxval, idx] = np.maximum(hm_results)
-    [row, col] = ind2sub(np.shape(hm_results), idx)
-    y_predict = row / np.shape(hm_results[0])
-    x_predict = col / np.shape(hm_results[1])
-
-if __name__=="__main__":
-    caffe.set_device(0)
-    caffe.set_mode_gpu()
+    rows_cols = ind2sub(np.shape(hm_results), idx)
+    y_predict = rows_cols[0] / np.shape(hm_results[0])
+    x_predict = rows_cols[1] / np.shape(hm_results[1])
 
 def ind2sub(array_shape, ind):
     ind[ind < 0] = -1
     ind[ind >= array_shape[0]*array_shape[1]] = -1
     rows = (ind.astype('int') / array_shape[1])
     cols = ind % array_shape[1]
-    return (rows, cols)
+    return [rows, cols]
+
+if __name__=="__main__":
+    caffe.set_device(0)
+    caffe.set_mode_gpu()
+    e = [0.6, 0.2679]
+    img = imread("script/test.jpg")
+    predict_gaze(img, e)
