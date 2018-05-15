@@ -12,63 +12,28 @@ def predict_gaze(img, e):
     network = caffe.Net('/home/pieter/projects/engagement-l2tor/data/model/deploy_demo.prototxt', \
             '/home/pieter/projects/engagement-l2tor/data/model/binary_w.caffemodel',\
             caffe.TEST)
-    np.random.seed(1)
-    np.random.rand()
     filelist = []
+    #1
     filelist.append(img)
+
+
     alpha = 0.3
-    w_x = np.floor(alpha * img.shape[1])
-    w_y = np.floor(alpha * img.shape[0])
-    w_x = int(w_x)
-    w_y = int(w_y)
-
-    if (w_x % 2 == 0):
-        w_x = w_x + 1
-    if (w_y % 2 == 0):
-        w_y = w_y + 1
-
-    im_face = np.ones((w_y, w_x, 3))
-    im_face[:,:,0] = 123*np.ones((w_y,w_x))
-    im_face[:,:,1] = 117*np.ones((w_y,w_x))
-    im_face[:,:,2] = 104*np.ones((w_y,w_x))
-
-    center = np.floor([e[0]*img.shape[1],e[1]*img.shape[0]])
-
-    d_x = np.floor((w_x-1)/2)
-    d_y = np.floor((w_y-1)/2)
-
-    bottom_x = center[0] - d_x
-    delta_b_x = 1
-    if (bottom_x < 1):
-        delta_b_x = 2 - bottom_x
-        bottom_x = 1
-    top_x = center[0] + d_x
-    delta_t_x = w_x
-
-    if (top_x > img.shape[1]):
-        delta_t_x = w_x - (top_x - img.shape[1])
-        top_x = img.shape[1]
-    bottom_y = center[1] - d_y
-
-    delta_b_y = 1
-    if (bottom_y < 1):
-        delta_b_y = 2 - bottom_y
-        bottom_y = 1
-    top_y = center[1] + d_y
-
-    delta_t_y = w_y
-    if (top_y > img.shape[0]):
-        delta_t_y = w_y - (top_y - img.shape[0])
-        top_y = img.shape[0]
-
-
-    im_face[delta_b_y:delta_t_y , delta_b_x:delta_t_x,:] = img[int(bottom_y):int(top_y),int(bottom_x):int(top_x),:]
+    wy = int(alpha * img.shape[0])
+    wx = int(alpha * img.shape[1])
+    center = [int(e[0]*img.shape[1]), int(e[1]*img.shape[0])]
+    y1 = int(center[1]-.5*wy)
+    y2 = int(center[1]+.5*wy)
+    x1 = int(center[0]-.5*wx)
+    x2 = int(center[0]+.5*wx)
+    #make crop of face from image
+    im_face = img[y1:y2, x1:x2, :]
     filelist.append(im_face)
 
+    #3 face location to input
     f = np.zeros((1, 1, 169))
     z = np.zeros((13,13))
-    x = np.floor(e[0] * 13) + 1
-    y = np.floor(e[1] * 13) + 1
+    x = int(e[0] * 13) + 1
+    y = int(e[1] * 13) + 1
     z[int(x),int(y)] = 1
     f[0,0,:]= z.flatten(1)
     filelist.append(f)
@@ -110,16 +75,11 @@ def predict_gaze(img, e):
         b = np.hstack(b)
         ims[j] = b
     #validated untill here
-
-
     network.blobs['data'] = ims[0]
     network.blobs['face'] = ims[1]
     network.blobs['eyes_grid'] = ims[2]
 
     f_val = network.forward()
-
-    print(f_val.keys())
-
     fc_0_0 = f_val['fc_0_0']
     fc_1_0 = f_val['fc_1_0']
     fc_m1_0 = f_val['fc_m1_0']
@@ -130,21 +90,23 @@ def predict_gaze(img, e):
     count_hm = np.zeros((15, 15))
 
     #this line is correct
-    f_0_0 = np.reshape(fc_0_0[0,], (5,5), order="F")
-    f_0_0 = np.exp(alpha * f_0_0)/np.exp(alpha*np.sum(f_0_0))
+    f_0_0 = np.reshape(fc_0_0, (5,5))
+    f_0_0 = np.exp(alpha * f_0_0)/sum(np.exp(alpha*f_0_0))
 
-    f_1_0 = np.reshape(fc_1_0[0,], (5,5), order="F")
-    f_1_0 = np.exp(alpha*f_1_0)/np.sum(np.exp(alpha*np.sum(f_1_0)))
+    f_1_0 = np.reshape(fc_1_0, (5,5))
+    f_1_0 = np.exp(alpha*f_1_0)/sum(np.exp(alpha*f_1_0))
 
-    f_m1_0 = np.reshape(fc_m1_0[0,], (5,5), order="F")
-    f_m1_0 = np.exp(alpha*f_m1_0)/np.sum(np.exp(alpha*np.sum(f_m1_0)))
+    f_m1_0 = np.reshape(fc_m1_0, (5,5),)
+    f_m1_0 = np.exp(alpha*f_m1_0)/sum(np.exp(alpha*f_m1_0))
 
-    f_0_m1 = np.reshape(fc_0_m1[0,], (5,5), order="F")
-    f_0_m1 = np.exp(alpha*f_0_m1) / np.sum(np.exp(alpha*np.sum(f_0_m1)))
+    f_0_m1 = np.reshape(fc_0_m1, (5,5))
+    f_0_m1 = np.exp(alpha*f_0_m1) / sum(np.exp(alpha*f_0_m1))
 
-    f_0_1 = np.reshape(fc_0_1[0,], (5,5), order="F")
-    f_0_1 = np.exp(alpha*f_0_1) / np.sum(np.exp(alpha*np.sum(f_0_1)))
+    f_0_1 = np.reshape(fc_0_1, (5,5))
+    f_0_1 = np.exp(alpha*f_0_1) / sum(np.exp(alpha*f_0_1))
 
+    print("f_0_0")
+    print(f_0_0)
     f_cell = [f_0_0,f_1_0,f_m1_0,f_0_m1,f_0_1]
     v_x = [0, 1, -1, 0, 0]
     v_y = [0, 0, 0, -1, 1]
@@ -181,16 +143,14 @@ def predict_gaze(img, e):
     hm_base = hm / count_hm
     hm_base = np.array(hm_base, dtype=np.uint8)
     hm_results = imresize(hm_base, (img.shape[0], img.shape[1]), interp='bicubic')
-
     hmr = hm_results.flatten()
     maxval, idx = hmr.max(0), hmr.argmax(0)
     #[maxval, idx] = np.max(hm_results.flatten())
-    print(idx)
     rows_cols = ind2sub2(np.shape(hm_results), idx)
-
+    print(rows_cols)
     y_predict = rows_cols[0] / np.shape(hm_results[0])
     x_predict = rows_cols[1] / np.shape(hm_results[1])
-    return x_predict, y_predict, hm_results, network
+    return x_predict, y_predict, hm_results, network, im_face
 
 def ind2sub2(array_shape, ind):
     rows = (ind.astype('int') / array_shape[1])
@@ -204,28 +164,27 @@ def ind2sub(array_shape, ind):
     cols = ind % array_shape[1]
     return [rows, cols]
 
-def visualize(x_predict, y_predict, img):
-    g = np.floor([x_predict, y_predict]*[img.shape[1], img.shape[0]])
-    e = np.floor(e * [img.shape[1], img.shape[0]])
-    line = [e[0], e[1], g[0], g[1]]
-    print(line)
-    #im = insertShape(im,'line',line,'Color','red','LineWidth',8);
+def getGaze(img, e):
+    img = imread(img)
+    x_predict, y_predict, hm_results, network, face = predict_gaze(img, e)
+    #print(np.shape(img))
+    #print(x_predict, y_predict)
+    fig, ax = fig,ax = plt.subplots(1)
+    ax.set_aspect('equal')
+    ax.imshow(img)
+    #add patch for gaze element
+    ax.add_patch(Circle((x_predict*img.shape[0],y_predict*img.shape[1]),20))
+    #add patch for the head
+    #ax.add_patch(Circle((e[0]*img.shape[1], e[1]*img.shape[0]), 20, Color="red"))
+    plt.imshow(face[...,::-1])
+    return x_predict, y_predict, hm_results
+
 
 if __name__=="__main__":
     #caffe.set_device(0)
     #caffe.set_mode_gpu()
-    e = [0.6, 0.2679]
-    img = imread("script/test.jpg")
-    x_predict, y_predict, hm_results, network = predict_gaze(img, e)
-    # Show the image
-    print(np.shape(img))
-    print(x_predict, y_predict)
-    im = plt.imread('script/test.jpg')
-    fig, ax = fig,ax = plt.subplots(1)
-    ax.set_aspect('equal')
-    ax.imshow(img)
-    #multiply with corresponding axes to go to absolute coordinates
-    circ = Circle((x_predict*1400,y_predict*2100),50)
-    ax.add_patch(circ)
-    ax.add_patch(Circle((e[0]*2100, e[1]*1400), 50))
-    plt.show()
+    x1, y1, hm = getGaze('script/5.jpg', [0.54, 0.28])
+    #x2, y2, hm2 = getGaze('script/test.jpg', [.60, .2679])
+    #print(np.array_equal(x1, x2))
+    #print(np.array_equal(y1, y2))
+    #print(np.array_equal(hm, hm2))
