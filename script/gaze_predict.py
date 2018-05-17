@@ -28,35 +28,28 @@ def prepImages(img, e):
     wy = int(alpha * img.shape[0])
     wx = int(alpha * img.shape[1])
     center = [int(e[0]*img.shape[1]), int(e[1]*img.shape[0])]
-    print(center)
     y1 = int(center[1]-.5*wy)
     y2 = int(center[1]+.5*wy)
     x1 = int(center[0]-.5*wx)
     x2 = int(center[0]+.5*wx)
     #make crop of face from image
     im_face = img[y1:y2, x1:x2, :]
-    """
-    f = np.zeros((1, 1, 169))
-    z = np.zeros((13,13))
-    x = np.floor(e[0] * 13) + 1
-    y = np.floor(e[1] * 13) + 1
-    z[int(x),int(y)] = 1
-    """
 
     #subtract mean from images
     places_mean = sio.loadmat('data/model/places_mean_resize.mat')
     imagenet_mean = sio.loadmat('data/model/imagenet_mean_resize.mat')
     places_mean = places_mean['image_mean']
     imagenet_mean = imagenet_mean['image_mean']
-
     #resize image and subtract mean
     img_resize = imresize(img, input_shape, interp='bicubic')
     img_resize = img_resize - places_mean
-
+    img_test = img_resize
+    
+    plt.imshow(img_test)
+    plt.show()
     #resize eye image
     eye_image = imresize(im_face, input_shape, interp='bicubic')
     eye_image_resize = eye_image - places_mean
-
     #get everything in the right input format for the network
     img_resize, eye_image_resize = fit_shape_of_inputs(img_resize, eye_image_resize)
     #print(np.shape(img), np.shape(img_resize), np.shape(eye_image_resize), np.shape(z))
@@ -85,22 +78,21 @@ def eyeGrid(img, headlocs):
     return eyes_grid_flat
 
 def fit_shape_of_inputs(img_resize, eye_image_resize):
-        # orginal shape: (height, width, channel),
-        #new shape: (n_batch, channel, height, width)
-        input_image_resize = img_resize.reshape([img_resize.shape[0], \
-                                                                   img_resize.shape[1], \
-                                                                   img_resize.shape[2], \
-                                                                   1])
-        input_image_resize = input_image_resize.transpose(3, 2, 0, 1)
+    # orginal shape: (height, width, channel),
+    #new shape: (n_batch, channel, height, width)
+    input_image_resize = img_resize.reshape([img_resize.shape[0], \
+                                                               img_resize.shape[1], \
+                                                               img_resize.shape[2], \
+                                                               1])
+    input_image_resize = input_image_resize.transpose(3, 2, 0, 1)
 
-        eye_image_resize = eye_image_resize.reshape([eye_image_resize.shape[0], \
-                                                    eye_image_resize.shape[1], \
-                                                    eye_image_resize.shape[2], 1])
-        eye_image_resize = eye_image_resize.transpose(3, 2, 0, 1)
-        return input_image_resize, eye_image_resize
+    eye_image_resize = eye_image_resize.reshape([eye_image_resize.shape[0], \
+                                                eye_image_resize.shape[1], \
+                                                eye_image_resize.shape[2], 1])
+    eye_image_resize = eye_image_resize.transpose(3, 2, 0, 1)
+    return input_image_resize, eye_image_resize
 
 def predictGaze(network, image, head_image, head_loc):
-
     network.blobs['data'] = image
     network.blobs['face'] = head_image
     network.blobs['eyes_grid'] = head_loc
@@ -113,7 +105,6 @@ def postProcessing(f_val, input_image):
     f_m1_0 = np.reshape(f_val['fc_m1_0'], (5,5))
     f_0_1 = np.reshape(f_val['fc_0_1'], (5,5))
     f_0_m1 = np.reshape(f_val['fc_0_m1'], (5,5))
-
     gaze_grid_list = [alpha_exponentiate(f_0_0), \
                           alpha_exponentiate(f_1_0), \
                           alpha_exponentiate(f_m1_0), \
@@ -133,14 +124,17 @@ def postProcessing(f_val, input_image):
                 average_map[ix:fx+1, iy:fy+1] += gaze_grids[x, y]
                 count_map[ix:fx+1, iy:fy+1] += 1
     average_map = average_map / count_map
+    #average_map = np.flip(average_map, 0)
     final_map = imresize(average_map, input_image.shape, interp='bicubic')
+    plt.imshow(final_map)
+    plt.show()
     flatten_final_map = final_map.flatten()
     max_idx = np.argmax(flatten_final_map)
     flatten_final_map[max_idx] = 0
     predictions = ind2sub(final_map.shape, max_idx)
     return final_map, predictions
 
-def alpha_exponentiate(x, alpha=0.3):
+def alpha_exponentiate(x, alpha=1.2):
     return np.exp(alpha * x) / np.sum(np.exp(alpha*x.flatten()))
 
 def ind2sub(array_shape, ind):
@@ -162,8 +156,8 @@ def shifted_mapping(x, delta_x, is_topleft_corner):
 
 if __name__=="__main__":
     network = loadModel()
-    image, image_resize, head_image, head_loc = prepImages('script/5.jpg', [0.54, 0.28])
-    #image, image_resize, head_image, head_loc = prepImages('script/test.jpg', [0.60, 0.2679])
+    #image, image_resize, head_image, head_loc = prepImages('script/5.jpg', [0.54, 0.28])
+    image, image_resize, head_image, head_loc = prepImages('script/test.jpg', [0.60, 0.2679])
     f_val = predictGaze(network, image_resize, head_image, head_loc)
     final_map, predictions = postProcessing(f_val, image)
     x_pred = int(predictions[0])
@@ -173,6 +167,6 @@ if __name__=="__main__":
     ax.set_aspect('equal')
     plt.imshow(image)
     #add patch for gaze element
-    ax.add_patch(Circle((y_pred, x_pred),50))
+    ax.add_patch(Circle((x_pred, y_pred),50))
     print("Done")
     plt.show()
