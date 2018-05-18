@@ -1,10 +1,12 @@
 import numpy as np
-import caffe
 from skimage.io import imread
 import matplotlib.pyplot as plt
 import scipy.io as sio
 from scipy.misc import imresize
 from matplotlib.patches import Circle
+import sys
+sys.path.append('/home/pieter/projects/caffe/python')
+import caffe
 
 def loadModel():
     model_def = '/home/pieter/projects/engagement-l2tor/data/model/deploy_demo.prototxt'
@@ -14,7 +16,7 @@ def loadModel():
 
 def prepImages(img, e):
     """
-    In model the channels are reversed (BGR instead of RGB)
+    Output images of prepImages are exactly the same as the matlab ones
     img: image of subject
     network: loaded caffe model, in test mode
     e: head location (relative) (x, y)
@@ -42,25 +44,22 @@ def prepImages(img, e):
     imagenet_mean = imagenet_mean['image_mean']
     #resize image and subtract mean
     img_resize = imresize(img, input_shape, interp='bicubic')
-    img_resize = img_resize - places_mean
-    img_test = img_resize
-    
-    plt.imshow(img_test)
-    plt.show()
+    img_resize = img_resize[:,:,[2,1,0]] - places_mean
+    img_resize = np.rot90(np.fliplr(img_resize))
+
     #resize eye image
     eye_image = imresize(im_face, input_shape, interp='bicubic')
-    eye_image_resize = eye_image - places_mean
+    eye_image_resize = eye_image[:,:,[2,1,0]] - places_mean
+    eye_image_resize = np.rot90(np.fliplr(eye_image_resize))
     #get everything in the right input format for the network
-    img_resize, eye_image_resize = fit_shape_of_inputs(img_resize, eye_image_resize)
+    #img_resize, eye_image_resize = fit_shape_of_inputs(img_resize, eye_image_resize)
     #print(np.shape(img), np.shape(img_resize), np.shape(eye_image_resize), np.shape(z))
-    #plt.imshow(eye_image_resize.transpose(0,2,3,1)[0])
-    #plt.imshow(img)
-    #plt.show()
     z = eyeGrid(img, [x1, x2, y1, y2])
     return img, img_resize, eye_image_resize, z
 
 
 def eyeGrid(img, headlocs):
+    #tested and returns same input as matlab eyegrid!
     w = img.shape[1]
     h = img.shape[0]
     x1_scaled = headlocs[0] / w
@@ -76,21 +75,6 @@ def eyeGrid(img, headlocs):
     eyes_grid_flat = eyes_grid.flatten()
     eyes_grid_flat = eyes_grid_flat.reshape(1, len(eyes_grid_flat), 1, 1)
     return eyes_grid_flat
-
-def fit_shape_of_inputs(img_resize, eye_image_resize):
-    # orginal shape: (height, width, channel),
-    #new shape: (n_batch, channel, height, width)
-    input_image_resize = img_resize.reshape([img_resize.shape[0], \
-                                                               img_resize.shape[1], \
-                                                               img_resize.shape[2], \
-                                                               1])
-    input_image_resize = input_image_resize.transpose(3, 2, 0, 1)
-
-    eye_image_resize = eye_image_resize.reshape([eye_image_resize.shape[0], \
-                                                eye_image_resize.shape[1], \
-                                                eye_image_resize.shape[2], 1])
-    eye_image_resize = eye_image_resize.transpose(3, 2, 0, 1)
-    return input_image_resize, eye_image_resize
 
 def predictGaze(network, image, head_image, head_loc):
     network.blobs['data'] = image
@@ -126,8 +110,6 @@ def postProcessing(f_val, input_image):
     average_map = average_map / count_map
     #average_map = np.flip(average_map, 0)
     final_map = imresize(average_map, input_image.shape, interp='bicubic')
-    plt.imshow(final_map)
-    plt.show()
     flatten_final_map = final_map.flatten()
     max_idx = np.argmax(flatten_final_map)
     flatten_final_map[max_idx] = 0
