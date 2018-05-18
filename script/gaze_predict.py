@@ -52,10 +52,23 @@ def prepImages(img, e):
     eye_image_resize = eye_image[:,:,[2,1,0]] - places_mean
     eye_image_resize = np.rot90(np.fliplr(eye_image_resize))
     #get everything in the right input format for the network
-    #img_resize, eye_image_resize = fit_shape_of_inputs(img_resize, eye_image_resize)
+    img_resize, eye_image_resize = fit_shape_of_inputs(img_resize, eye_image_resize)
     #print(np.shape(img), np.shape(img_resize), np.shape(eye_image_resize), np.shape(z))
     z = eyeGrid(img, [x1, x2, y1, y2])
     return img, img_resize, eye_image_resize, z
+
+def fit_shape_of_inputs(img_resize, eye_image_resize):
+    input_image_resize = img_resize.reshape([img_resize.shape[0], \
+                                               img_resize.shape[1], \
+                                               img_resize.shape[2], 1])
+    input_image_resize = input_image_resize.transpose(3, 2, 0, 1)
+
+    eye_image_resize = eye_image_resize.reshape([eye_image_resize.shape[0], \
+                                                eye_image_resize.shape[1], \
+                                                eye_image_resize.shape[2], 1])
+    eye_image_resize = eye_image_resize.transpose(3, 2, 0, 1)
+    return input_image_resize, eye_image_resize
+
 
 
 def eyeGrid(img, headlocs):
@@ -77,9 +90,9 @@ def eyeGrid(img, headlocs):
     return eyes_grid_flat
 
 def predictGaze(network, image, head_image, head_loc):
-    network.blobs['data'] = image
-    network.blobs['face'] = head_image
-    network.blobs['eyes_grid'] = head_loc
+    network.blobs['data'].data[...] = image
+    network.blobs['face'].data[...] = head_image
+    network.blobs['eyes_grid'].data[...] = head_loc
     f_val = network.forward()
     return f_val
 
@@ -108,21 +121,19 @@ def postProcessing(f_val, input_image):
                 average_map[ix:fx+1, iy:fy+1] += gaze_grids[x, y]
                 count_map[ix:fx+1, iy:fy+1] += 1
     average_map = average_map / count_map
-    #average_map = np.flip(average_map, 0)
-    final_map = imresize(average_map, input_image.shape, interp='bicubic')
-    flatten_final_map = final_map.flatten()
-    max_idx = np.argmax(flatten_final_map)
-    flatten_final_map[max_idx] = 0
-    predictions = ind2sub(final_map.shape, max_idx)
-    return final_map, predictions
+    final_map = imresize(average_map, (227,227), interp='bicubic')
+    print(np.shape(final_map))
+    plt.imshow(final_map)
+    plt.show()
+    return final_map, None
 
 def alpha_exponentiate(x, alpha=1.2):
     return np.exp(alpha * x) / np.sum(np.exp(alpha*x.flatten()))
 
 def ind2sub(array_shape, ind):
-    row = (ind.astype('int') / array_shape[1])
+    row = (ind / array_shape[1])
     col = ind % array_shape[1]
-    return (row, col)
+    return [row, col]
 
 def shifted_mapping(x, delta_x, is_topleft_corner):
     if is_topleft_corner:
@@ -138,17 +149,19 @@ def shifted_mapping(x, delta_x, is_topleft_corner):
 
 if __name__=="__main__":
     network = loadModel()
-    #image, image_resize, head_image, head_loc = prepImages('script/5.jpg', [0.54, 0.28])
-    image, image_resize, head_image, head_loc = prepImages('script/test.jpg', [0.60, 0.2679])
+    image, image_resize, head_image, head_loc = prepImages('script/5.jpg', [0.54, 0.28])
+    #image, image_resize, head_image, head_loc = prepImages('script/test.jpg', [0.60, 0.2679])
     f_val = predictGaze(network, image_resize, head_image, head_loc)
-    final_map, predictions = postProcessing(f_val, image)
-    x_pred = int(predictions[0])
-    y_pred = int(predictions[1])
-    print(x_pred, y_pred)
-    fig, ax = fig,ax = plt.subplots(1)
-    ax.set_aspect('equal')
+    final_map, predictions = postProcessing(f_val, image_resize)
     plt.imshow(image)
-    #add patch for gaze element
-    ax.add_patch(Circle((x_pred, y_pred),50))
-    print("Done")
     plt.show()
+    #x_pred = int(predictions[0])
+    #y_pred = int(predictions[1])
+    #print(x_pred, y_pred)
+    #fig, ax = fig,ax = plt.subplots(1)
+    #ax.set_aspect('equal')
+    #plt.imshow(image)
+    #add patch for gaze element
+    #ax.add_patch(Circle((x_pred, y_pred),50))
+    #print("Done")
+    #plt.show()
