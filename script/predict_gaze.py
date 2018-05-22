@@ -24,10 +24,12 @@ class Gaze():
         """Returns x,y coordinates of the gaze location
 
         Keyword Arguments:
-        image -- original image containing subject
+        image -- original image, already read by scipy imread or cv2 imread
         headloc -- relative head location(x, y)"""
-        self.image = imread(image)
+        self.image = image
         self.headloc = headloc
+        self.head_x = int(headloc[0] * np.shape(self.image)[1])
+        self.head_y = int(headloc[1] * np.shape(self.image)[0])
         self.img_resize, self.eye_image_resize, self.z =\
             self.prepImages(self.image, self.headloc)
         self.network_outputs = self.predictGaze()
@@ -52,6 +54,7 @@ class Gaze():
         ax.set_aspect('equal')
         plt.imshow(self.image)
         ax.add_patch(Circle((self.x, self.y),10))
+        ax.add_patch(Circle((self.head_x, self.head_y), 10, color = 'r'))
         plt.show()
 
     def prepImages(self, img, e):
@@ -204,11 +207,14 @@ if __name__ == '__main__':
     model_def = '/home/pieter/projects/engagement-l2tor/data/model/deploy_demo.prototxt'
     model_weights = '/home/pieter/projects/engagement-l2tor/data/model/binary_w.caffemodel'
     gazemachine = Gaze(model_def, model_weights)
-    image = 'script/5.jpg'
+    image = imread('script/images/5.jpg')
     e = [0.54, 0.28]
+    #e = [y, x]
     predictions = gazemachine.getGaze(image, e)
+    print(predictions)
     gazemachine.visualizeGaze()
-    image = 'script/test.jpg'
+
+    image = imread('script/images/test.jpg')
     e = [0.60, 0.2679]
     predictions = gazemachine.getGaze(image, e)
     gazemachine.visualizeGaze()
