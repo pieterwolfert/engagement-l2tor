@@ -35,14 +35,17 @@ class Preprocessing:
         return labels
 
     def loadImages(self, filenames, labels, folder, size):
-        ext = "/10.png"
+        ext = ["0.png", "1.png", "2.png", "3.png", "4.png", "5.png", "6.png",\
+        "7.png", "8.png", "9.png", "10.png"]
+        #ext = ["0.png"]
         x_train = []
         y_train = []
         for x, y in zip(filenames, labels):
-            try:
-                tmp = imread(self.datadir + folder + x + ext)
-                x_train.append(imresize(tmp, size, interp='bicubic'))
-                y_train.append(y)
-            except FileNotFoundError as f:
-                pass
+            for e in ext:
+                try:
+                    tmp = imread(self.datadir + folder + x + "/" + e)
+                    x_train.append(imresize(tmp, size, interp='bicubic'))
+                    y_train.append(y)
+                except FileNotFoundError as f:
+                    pass
         return np.asarray(x_train), np.asarray(y_train)
