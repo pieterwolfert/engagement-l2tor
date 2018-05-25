@@ -16,6 +16,9 @@ class Gaze():
         """Helper function to return image."""
         return self.image
 
+    def getEyeImage(self):
+        return self.eye_image_resize.transpose(0,2,3,1)[0]
+
     def getHeatmap(self):
         """Get heatmap to see where the gaze is predicted."""
         return self.heatmap
@@ -95,7 +98,7 @@ class Gaze():
         eye_image = imresize(im_face, input_shape, interp='bicubic')
         eye_image = eye_image.astype('float32')
         eye_image_resize = eye_image[:,:,[2,1,0]] - imagenet_mean
-        eye_image_resize = np.rot90(np.fliplr(eye_image_resize))
+        eye_image_resize = np.rot90(np.fliplr(eye_image_resize)).astype('float32')
         #get everything in the right input format for the network
         img_resize, eye_image_resize = self.fit_shape_of_inputs(img_resize,\
                                         eye_image_resize)
@@ -212,9 +215,15 @@ if __name__ == '__main__':
     #e = [y, x]
     predictions = gazemachine.getGaze(image, e)
     print(predictions)
+    plt.imshow(gazemachine.getHeatmap())
+    plt.show()
     gazemachine.visualizeGaze()
-
-    image = imread('script/images/test.jpg')
-    e = [0.60, 0.2679]
-    predictions = gazemachine.getGaze(image, e)
-    gazemachine.visualizeGaze()
+    plt.imshow(gazemachine.getEyeImage())
+    plt.show()
+    #image = imread('script/images/test.jpg')
+    #image = np.fliplr(image)
+    #e = [0.60, .2679]
+    #e = [0.60, 0.2679]
+    #predictions = gazemachine.getGaze(image, e)
+    #print(predictions)
+    #gazemachine.visualizeGaze()

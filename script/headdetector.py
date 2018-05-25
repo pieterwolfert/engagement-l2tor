@@ -26,10 +26,11 @@ if __name__ == '__main__':
             y_face = int((y+ (y+h))/2)
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
         # Display the resulting frame
-        e = [y_face/y_frame, x_face/x_frame]
+        e = [x_face/x_frame, y_face/y_frame,]
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         if e[0] != 0.0 and e[1] != 0.0:
             predictions = gazemachine.getGaze(image, e)
+            cv2.imshow('Eyeframe', gazemachine.getEyeImage())
             #cv2.circle(frame, (predictions[0], predictions[1]), 10, (0, 255,0), 2)
             cv2.line(frame, (x_face, y_face), (predictions[0], predictions[1]), (0, 255, 0), 2)
             print(predictions)
