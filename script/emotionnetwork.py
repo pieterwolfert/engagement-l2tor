@@ -2,10 +2,12 @@ import numpy as np
 import csv
 from keras.utils import plot_model
 from preprocessing import Preprocessing
-from keras.layers import Activation, Input, Conv2D, Dense, Dropout, MaxPooling2D, SeparableConv2D, GlobalAveragePooling2D
+from keras.layers import Activation, Input, Conv2D, Dense, Dropout, \
+    MaxPooling2D, SeparableConv2D, GlobalAveragePooling2D
 from keras import layers
 from keras.models import Model
-from keras.optimizers import Adam
+from keras.callbacks import CSVLogger, ReduceLROnPlateau, ModelCheckpoint
+from keras.optimizers import Adam, SGD
 from keras.layers.normalization import BatchNormalization
 import matplotlib.pyplot as plt
 
@@ -75,17 +77,24 @@ def getmodel():
     x = GlobalAveragePooling2D()(x)
     output = Dense(8, activation='softmax', name='predictions')(x)
     model = Model(inputs=img_input, outputs=output)
+    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['accuracy'])
     return model
+
+def train(x_train, y_train, x_test, y_test):
+    model = getmodel()
+    lr_plateau = ReduceLROnPlateau(monitor='val_loss', patience=3, verbose=1, factor=0.5)
+    checkpoint = ModelCheckpoint(filepath='./models/'+"emotions+'.hdf5',
+                             verbose=1, save_best_only=True)
+    #plot_model(model, to_file="architecture.png")
+    model.fit(x_train, y_train, epochs=100, batch_size=64,\
+        callbacks=[lr_plateau, checkpoint],\
+         validation_data=(x_test, y_test))
 
 def main():
     prep = Preprocessing(data_dir)
-    x_train, y_train, x_test, y_test = prep.loadData("train.txt", "test.txt")
-    print(np.shape(x_train))
-    model = getmodel()
-    plot_model(model, to_file="architecture.png")
-    #model.fit(x_train, y_train, epochs=100, batch_size=64)
+    train(prep.loadData("train.txt", "test.txt"))
     #score = model.evaluate(x_test, y_test, batch_size=32)
-
 
 if __name__=="__main__":
     main()

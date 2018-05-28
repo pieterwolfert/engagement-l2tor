@@ -25,7 +25,8 @@ class Gaze():
         """Get heatmap to see where the gaze is predicted."""
         return self.heatmap
 
-    def getGaze(self, image: np.array, headloc:List[float], alpha=0.3) -> List[float]:
+    def getGaze(self, image: np.array, headloc:List[float], alpha=0.3)\
+            -> List[float]:
         """Returns x,y coordinates of the gaze location
 
         Keyword Arguments:
@@ -137,7 +138,8 @@ class Gaze():
 
     def postProcessing(self, f_val: List[float])\
             -> Union[np.array, List[float]]:
-        """Combines the 5 outputs into one heatmap and calculates the gaze location
+        """Combines the 5 outputs into one heatmap
+         and calculates the gaze location.
 
         Keyword arguments:
         f_val -- output of the Caffe model
@@ -186,7 +188,7 @@ class Gaze():
             -> List[float]:
         """Python implementation of the equivalent matlab method"""
         rows = (ind / array_shape[1])
-        cols = (ind % array_shape[1]) 
+        cols = (ind % array_shape[1])
         return [rows, cols]
 
     def shifted_mapping(self, x: int, delta_x: int, is_topleft_corner: bool)\
