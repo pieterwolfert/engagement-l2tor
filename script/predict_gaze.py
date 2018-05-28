@@ -1,4 +1,6 @@
 import numpy as np
+from typing import List, NewType, Union, Tuple
+import time
 from skimage.io import imread
 import matplotlib.pyplot as plt
 import scipy.io as sio
@@ -9,21 +11,21 @@ sys.path.append('/home/pieter/projects/caffe/python')
 import caffe
 
 class Gaze():
-    def __init__(self, model_def, model_weights):
+    def __init__(self, model_def: str, model_weights: str):
         self.network = caffe.Net(model_def, model_weights, caffe.TEST)
 
-    def getImage(self):
+    def getImage(self) -> np.array:
         """Helper function to return image."""
         return self.image
 
-    def getEyeImage(self):
+    def getEyeImage(self) -> np.array:
         return self.eye_image_resize.transpose(0,2,3,1)[0]
 
-    def getHeatmap(self):
+    def getHeatmap(self) -> np.array:
         """Get heatmap to see where the gaze is predicted."""
         return self.heatmap
 
-    def getGaze(self, image, headloc):
+    def getGaze(self, image: np.array, headloc:List[float]) -> List[float]:
         """Returns x,y coordinates of the gaze location
 
         Keyword Arguments:
@@ -42,7 +44,7 @@ class Gaze():
         self.y = int(self.predictions[1] * np.shape(self.image)[1])
         return [self.x, self.y]
 
-    def predictGaze(self):
+    def predictGaze(self) -> List[float]:
         """Loads data in network and does a forward pass."""
         self.network.blobs['data'].data[...] = self.img_resize
         self.network.blobs['face'].data[...] = self.eye_image_resize
@@ -60,7 +62,7 @@ class Gaze():
         ax.add_patch(Circle((self.head_x, self.head_y), 10, color = 'r'))
         plt.show()
 
-    def prepImages(self, img, e):
+    def prepImages(self, img: np.array, e: List[float]) -> np.array:
         """
         Output images of prepImages are exactly the same as the matlab ones
 
@@ -98,7 +100,8 @@ class Gaze():
         eye_image = imresize(im_face, input_shape, interp='bicubic')
         eye_image = eye_image.astype('float32')
         eye_image_resize = eye_image[:,:,[2,1,0]] - imagenet_mean
-        eye_image_resize = np.rot90(np.fliplr(eye_image_resize)).astype('float32')
+        eye_image_resize = np.rot90(np.fliplr(eye_image_resize))\
+            .astype('float32')
         #get everything in the right input format for the network
         img_resize, eye_image_resize = self.fit_shape_of_inputs(img_resize,\
                                         eye_image_resize)
@@ -106,7 +109,7 @@ class Gaze():
         z = z.astype('float32')
         return img_resize, eye_image_resize, z
 
-    def eyeGrid(self, img, headlocs):
+    def eyeGrid(self, img: np.array, headlocs: List[float]) -> np.array:
         """Calculates the relative location of the eye.
 
         Keyword Arguments:
@@ -129,7 +132,8 @@ class Gaze():
         eyes_grid_flat = eyes_grid_flat.reshape(1, len(eyes_grid_flat), 1, 1)
         return eyes_grid_flat
 
-    def postProcessing(self, f_val):
+    def postProcessing(self, f_val: List[float])\
+            -> Union[np.array, List[float]]:
         """Combines the 5 outputs into one heatmap and calculates the gaze location
 
         Keyword arguments:
@@ -172,16 +176,18 @@ class Gaze():
         x_predict = cols/227
         return final_map, [x_predict, y_predict]
 
-    def alpha_exponentiate(self, x, alpha=0.3):
+    def alpha_exponentiate(self, x, alpha=0.3) -> float:
         return np.exp(alpha * x) / np.sum(np.exp(alpha*x.flatten()))
 
-    def ind2sub2(self, array_shape, ind):
+    def ind2sub2(self, array_shape: Tuple[float, float], ind: float)\
+            -> List[float]:
         """Python implementation of the equivalent matlab method"""
         rows = (ind / array_shape[1])
         cols = (ind % array_shape[1]) # or numpy.mod(ind.astype('int'), array_shape[1])
         return [rows, cols]
 
-    def shifted_mapping(self, x, delta_x, is_topleft_corner):
+    def shifted_mapping(self, x: int, delta_x: int, is_topleft_corner: bool)\
+            -> int:
         if is_topleft_corner:
             if x == 0:
                 return 0
@@ -193,7 +199,8 @@ class Gaze():
             ix = 3 * (x + 1) - 1 - delta_x
         return min(14, ix)
 
-    def fit_shape_of_inputs(self, img_resize, eye_image_resize):
+    def fit_shape_of_inputs(self, img_resize: np.array,\
+            eye_image_resize: np.array):
         """Fits the input for the forward pass."""
         input_image_resize = img_resize.reshape([img_resize.shape[0], \
                                                    img_resize.shape[1], \
@@ -201,25 +208,29 @@ class Gaze():
         input_image_resize = input_image_resize.transpose(3, 2, 0, 1)
 
         eye_image_resize = eye_image_resize.reshape([eye_image_resize.shape[0], \
-                                                    eye_image_resize.shape[1], \
-                                                    eye_image_resize.shape[2], 1])
+                                                eye_image_resize.shape[1], \
+                                                eye_image_resize.shape[2], 1])
         eye_image_resize = eye_image_resize.transpose(3, 2, 0, 1)
         return input_image_resize, eye_image_resize
 
 if __name__ == '__main__':
-    model_def = '/home/pieter/projects/engagement-l2tor/data/model/deploy_demo.prototxt'
-    model_weights = '/home/pieter/projects/engagement-l2tor/data/model/binary_w.caffemodel'
+    model_def =\
+     '/home/pieter/projects/engagement-l2tor/data/model/deploy_demo.prototxt'
+    model_weights =\
+     '/home/pieter/projects/engagement-l2tor/data/model/binary_w.caffemodel'
     gazemachine = Gaze(model_def, model_weights)
+    start = time.time()
     image = imread('script/images/5.jpg')
     e = [0.54, 0.28]
-    #e = [y, x]
+    #e = [x,y]
     predictions = gazemachine.getGaze(image, e)
-    print(predictions)
-    plt.imshow(gazemachine.getHeatmap())
-    plt.show()
-    gazemachine.visualizeGaze()
-    plt.imshow(gazemachine.getEyeImage())
-    plt.show()
+    end = time.time()
+    #print(predictions)
+    #plt.imshow(gazemachine.getHeatmap())
+    #plt.show()
+    #gazemachine.visualizeGaze()
+    #plt.imshow(gazemachine.getEyeImage())
+    #plt.show()
     #image = imread('script/images/test.jpg')
     #image = np.fliplr(image)
     #e = [0.60, .2679]
