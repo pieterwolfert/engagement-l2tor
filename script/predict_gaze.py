@@ -25,7 +25,7 @@ class Gaze():
         """Get heatmap to see where the gaze is predicted."""
         return self.heatmap
 
-    def getGaze(self, image: np.array, headloc:List[float]) -> List[float]:
+    def getGaze(self, image: np.array, headloc:List[float], alpha=0.3) -> List[float]:
         """Returns x,y coordinates of the gaze location
 
         Keyword Arguments:
@@ -36,7 +36,7 @@ class Gaze():
         self.head_x = int(headloc[0] * np.shape(self.image)[1])
         self.head_y = int(headloc[1] * np.shape(self.image)[0])
         self.img_resize, self.eye_image_resize, self.z =\
-            self.prepImages(self.image, self.headloc)
+            self.prepImages(self.image, self.headloc, alpha)
         self.network_outputs = self.predictGaze()
         self.heatmap, self.predictions =\
             self.postProcessing(self.network_outputs)
@@ -62,7 +62,7 @@ class Gaze():
         ax.add_patch(Circle((self.head_x, self.head_y), 10, color = 'r'))
         plt.show()
 
-    def prepImages(self, img: np.array, e: List[float]) -> np.array:
+    def prepImages(self, img: np.array, e: List[float], alpha) -> np.array:
         """
         Output images of prepImages are exactly the same as the matlab ones
 
@@ -71,7 +71,6 @@ class Gaze():
         e --  head location (relative) [x, y]
         """
         input_shape = [227, 227]
-        alpha = 0.3
         img_resize = None
 
         wy = int(alpha * img.shape[0])
@@ -82,6 +81,10 @@ class Gaze():
         x1 = int(center[0]-.5*wx) - 1
         x2 = int(center[0]+.5*wx) - 1
         #make crop of face from image
+        if y1 < 0:
+            y1 = 0
+        if x1 < 0:
+            x1 = 0
         im_face = img[y1:y2, x1:x2, :]
 
         #subtract mean from images
@@ -183,7 +186,7 @@ class Gaze():
             -> List[float]:
         """Python implementation of the equivalent matlab method"""
         rows = (ind / array_shape[1])
-        cols = (ind % array_shape[1]) # or numpy.mod(ind.astype('int'), array_shape[1])
+        cols = (ind % array_shape[1]) 
         return [rows, cols]
 
     def shifted_mapping(self, x: int, delta_x: int, is_topleft_corner: bool)\
