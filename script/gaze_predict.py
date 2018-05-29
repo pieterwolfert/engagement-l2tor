@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from skimage.io import imread
 import matplotlib.pyplot as plt
 import scipy.io as sio
@@ -186,6 +187,7 @@ def getGaze(e, image):
     return [x,y]
 
 if __name__=="__main__":
+    start = time.time()
     #this main method is for testing purposes
     #predictions = getGaze([0.60, 0.2679], 'script/test.jpg')
     predictions = getGaze([0.54, 0.28], 'script/5.jpg')
