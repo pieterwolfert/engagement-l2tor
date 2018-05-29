@@ -80,6 +80,7 @@ class Gaze():
         x2 = int(center[0]+.5*wx) - 1
         #make crop of face from image
         if y1 < 0:
+            y2 = y2 - abs(y1)
             y1 = 0
         if x1 < 0:
             x1 = 0

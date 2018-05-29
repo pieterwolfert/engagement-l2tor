@@ -8,8 +8,9 @@ if __name__ == '__main__':
     model_weights = '/home/pieter/projects/engagement-l2tor/data/model/binary_w.caffemodel'
     gazemachine = Gaze(model_def, model_weights)
     faceCascade=cv2.CascadeClassifier('/home/pieter/projects/engagement-l2tor/data/haarcascade_frontalface_alt.xml')
+    eye_cascade = cv2.CascadeClassifier('/home/pieter/projects/engagement-l2tor/data/haarcascade_eye.xml')
     print(faceCascade.empty())
-    video = cv2.VideoCapture('/home/pieter/projects/engagement-l2tor/data/403059_les2_fragment1.mp4')
+    video = cv2.VideoCapture('/mnt/disk1/documents/data/EmoReact_V_1.0/Data/Train/iPOD94_2.mp4')
     while True:
         # Capture frame-by-frame
         #time.sleep(1)
@@ -24,15 +25,20 @@ if __name__ == '__main__':
         alpha = 0
         for (x, y, w, h) in faces:
             x_face = int((x + (x+w))/2)
-            y_face = int((y+ (y+h))/2)
+            y_face = int((y+ (y+h))/2) - 30
             alpha = w / x_frame
+            #roi_gray = gray[y:y+h, x:x+w]
+            #roi_color = frame[y:y+h, x:x+w]
+            #eyes = eye_cascade.detectMultiScale(roi_gray)
+            #for (ex,ey,ew,eh) in eyes:
+                #cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
             #cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
         # Display the resulting frame
         e = [x_face/x_frame, y_face/y_frame,]
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         if e[0] != 0.0 and e[1] != 0.0:
             predictions = gazemachine.getGaze(image, e, alpha)
-            cv2.imshow('Eyeframe', gazemachine.getEyeImage())
+            #cv2.imshow('Eyeframe', gazemachine.getEyeImage())
             cv2.circle(frame, (predictions[0], predictions[1]), 10, (0, 255,0), 2)
             cv2.line(frame, (x_face, y_face), (predictions[0], predictions[1]), (0, 255, 0), 2)
             print(predictions)
