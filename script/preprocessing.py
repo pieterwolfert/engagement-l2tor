@@ -2,6 +2,8 @@ import numpy as np
 import csv
 from scipy.misc import imread
 from scipy.misc import imresize
+from os import listdir
+from os.path import isfile, join
 
 class Preprocessing:
     def __init__(self, datadir):
@@ -26,6 +28,20 @@ class Preprocessing:
                 temp.append(row[0][:-4])
         return temp
 
+    def getFrames(self, filename, folder):
+        """gets filenames of frames"""
+        pth = self.datadir + folder + '/' + filename + '/'
+        filelist = []
+        for f in listdir(pth):
+            if isfile(join(pth, f)):
+                filelist.append(f)
+        return filelist
+
+
+        onlyfiles = [f for f in listdir(pth) if isfile(join(pth, f))]
+        print(onlyfiles)
+        return len(onlyfiles)
+
     def getLabels(self, filename, length):
         labels = np.zeros(shape=(length, 8))
         with open(self.datadir + filename) as f:
@@ -49,3 +65,18 @@ class Preprocessing:
                 except FileNotFoundError as f:
                     pass
         return np.asarray(x_train), np.asarray(y_train)
+
+def main():
+    data_dir = "/home/pieter/data/emoreact/"
+    prep = Preprocessing(data_dir)
+    file_count = 0
+    frames_count = 0
+    for group in ['train', 'test', 'validation']:
+        file_dict = {}
+        temp = prep.getFileNames(group + ".txt")
+        file_count += len(temp)
+        for i in temp:
+            file_dict[i] = prep.getFrames(i, group)
+
+if __name__=="__main__":
+    main()
