@@ -11,7 +11,7 @@ from keras.optimizers import Adam, SGD
 from keras.layers.normalization import BatchNormalization
 import matplotlib.pyplot as plt
 
-data_dir = "/home/pieter/data/emoreact/"
+data_dir = "./data/emoreact/"
 
 def getmodel():
     #part 1
@@ -81,20 +81,21 @@ def getmodel():
     model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['accuracy'])
     return model
 
-def train(x_train, y_train, x_test, y_test):
+def train(x_train, y_train, x_val, y_val):
     model = getmodel()
     lr_plateau = ReduceLROnPlateau(monitor='val_loss', patience=3, verbose=1, factor=0.5)
-    checkpoint = ModelCheckpoint(filepath='./models/'+"emotions+'.hdf5',
+    checkpoint = ModelCheckpoint(filepath='./models/'+'emotions'+'.hdf5',\
                              verbose=1, save_best_only=True)
     #plot_model(model, to_file="architecture.png")
     model.fit(x_train, y_train, epochs=100, batch_size=64,\
         callbacks=[lr_plateau, checkpoint],\
-         validation_data=(x_test, y_test))
+         validation_split=0.2)
 
 def main():
-    prep = Preprocessing(data_dir)
-    train(prep.loadData("train.txt", "test.txt"))
-    #score = model.evaluate(x_test, y_test, batch_size=32)
+    datadir = "/home/pieter/projects/engagement-l2tor/data/emotions/"
+    prep = Preprocessing(datadir, "x_train.txt", "x_test.txt",\
+        "y_train.txt", "y_test.txt")
+    x_train, y_train = prep.getTrainData(trim=False)
 
 if __name__=="__main__":
     main()
