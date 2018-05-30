@@ -11,8 +11,6 @@ from keras.optimizers import Adam, SGD
 from keras.layers.normalization import BatchNormalization
 import matplotlib.pyplot as plt
 
-data_dir = "./data/emoreact/"
-
 def getmodel():
     #part 1
     img_input = Input(shape=(128,128,3))
@@ -82,12 +80,15 @@ def getmodel():
     return model
 
 def train(x_train, y_train, x_val, y_val):
+    nr_epochs = 200
+    batch = 256
     model = getmodel()
     lr_plateau = ReduceLROnPlateau(monitor='val_loss', patience=3, verbose=1, factor=0.5)
-    checkpoint = ModelCheckpoint(filepath='./models/'+'emotions'+'.hdf5',\
+    checkpoint = ModelCheckpoint(filepath='./models/' + 'emotions_' + nr_epochs +\
+                            '_' + batch + '.hdf5',\
                              verbose=1, save_best_only=True)
     #plot_model(model, to_file="architecture.png")
-    model.fit(x_train, y_train, epochs=100, batch_size=64,\
+    model.fit(x_train, y_train, epochs=nr_epochs, batch_size=batch,\
         callbacks=[lr_plateau, checkpoint],\
          validation_split=0.2)
 

@@ -39,7 +39,8 @@ class Preprocessing():
         return imgs, y_train
 
 
-    def getTestData(self):
+    def getTestData(self, trim_size=1000):
+        img_size = (128,128)
         y_test = []
         with open(self.datadir + self.y_test) as f:
             rdr = csv.reader(f)
@@ -49,6 +50,17 @@ class Preprocessing():
         with open(self.datadir + self.x_test) as f:
             x_test = f.readlines()
             x_test = [x.strip() for x in x_test]
+        y_test = y_test[:trim_size]
+        x_test = x_test[:trim_size]
+        imgs = np.zeros((len(x_test), img_size[0], img_size[0], 3))
+        for i, x in enumerate(x_test):
+            flnm = self.datadir + x
+            imgs[i] = self.loadImage(flnm)
+        imgs = imgs/255
+        imgs -= np.mean(imgs, axis=0)
+        imgs = imgs/np.std(imgs, axis=0)
+        return imgs, y_test
+
 
     def loadImage(self, filename, resize=[True, (128,128)]):
         img = imread(filename)
