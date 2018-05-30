@@ -9,6 +9,7 @@ from keras.models import Model
 from keras.callbacks import CSVLogger, ReduceLROnPlateau, ModelCheckpoint
 from keras.optimizers import Adam, SGD
 from keras.layers.normalization import BatchNormalization
+from keras.utils.training_utils import multi_gpu_model
 import matplotlib.pyplot as plt
 
 def getmodel():
@@ -75,11 +76,12 @@ def getmodel():
     x = GlobalAveragePooling2D()(x)
     output = Dense(8, activation='softmax', name='predictions')(x)
     model = Model(inputs=img_input, outputs=output)
+    model = multi_gpu_model(model, gpus=3)
     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['accuracy'])
     return model
 
-def train(x_train, y_train, x_val, y_val):
+def train(x_train, y_train):
     nr_epochs = 200
     batch = 256
     model = getmodel()
