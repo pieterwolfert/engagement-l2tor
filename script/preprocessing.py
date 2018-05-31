@@ -12,10 +12,10 @@ class Preprocessing():
         self.y_train = y_train
         self.y_test = y_test
 
-    def getTrainData(self, trim=True):
+    def getTrainData(self, trim=True, img_shape):
         """Gets training data, normalizes data, ready for training."""
         trim_size = 1000
-        img_size = (128,128)
+        img_size = (img_shape[0],img_shape[1])
         y_train = []
         with open(self.datadir + self.y_train) as f:
             rdr = csv.reader(f)
@@ -32,15 +32,15 @@ class Preprocessing():
         imgs = np.zeros((len(x_train), img_size[0], img_size[0], 3))
         for i, x in enumerate(x_train):
             flnm = self.datadir + x
-            imgs[i] = self.loadImage(flnm)
+            imgs[i] = self.loadImage(flnm, resize=[True, img_size])
         imgs = imgs/255
         imgs -= np.mean(imgs, axis=0)
         imgs = imgs/np.std(imgs, axis=0)
         return imgs, y_train
 
 
-    def getTestData(self, trim_size=1000):
-        img_size = (128,128)
+    def getTestData(self, trim_size=1000, img_shape):
+        img_size = (img_shape[0],img_shape[1])
         y_test = []
         with open(self.datadir + self.y_test) as f:
             rdr = csv.reader(f)
@@ -55,7 +55,7 @@ class Preprocessing():
         imgs = np.zeros((len(x_test), img_size[0], img_size[0], 3))
         for i, x in enumerate(x_test):
             flnm = self.datadir + x
-            imgs[i] = self.loadImage(flnm)
+            imgs[i] = self.loadImage(flnm, , resize=[True, img_size])
         imgs = imgs/255
         imgs -= np.mean(imgs, axis=0)
         imgs = imgs/np.std(imgs, axis=0)
