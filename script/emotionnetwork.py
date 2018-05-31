@@ -9,12 +9,11 @@ from keras.models import Model
 from keras.callbacks import CSVLogger, ReduceLROnPlateau, ModelCheckpoint
 from keras.optimizers import Adam, SGD
 from keras.layers.normalization import BatchNormalization
-from keras.utils.training_utils import multi_gpu_model
 import matplotlib.pyplot as plt
 
 def getmodel(image_shape):
     #part 1
-    img_input = Input(shape=image_shape
+    img_input = Input(shape=image_shape)
     x = Conv2D(32, (3, 3), strides=(2, 2), use_bias=False)(img_input)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
@@ -76,7 +75,6 @@ def getmodel(image_shape):
     x = GlobalAveragePooling2D()(x)
     output = Dense(8, activation='softmax', name='predictions')(x)
     model = Model(inputs=img_input, outputs=output)
-    model = multi_gpu_model(model, gpus=3)
     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['accuracy'])
     return model
@@ -86,8 +84,8 @@ def train(x_train, y_train, image_shape):
     batch = 256
     model = getmodel(image_shape)
     lr_plateau = ReduceLROnPlateau(monitor='val_loss', patience=3, verbose=1, factor=0.5)
-    checkpoint = ModelCheckpoint(filepath='./models/' + 'emotions9696_' + int(nr_epochs) +\
-                            '_' + int(batch) + '.hdf5',\
+    checkpoint = ModelCheckpoint(filepath='./models/' + 'emotions9696_' + str(nr_epochs) +\
+                            '_' + str(batch) + '.hdf5',\
                              verbose=1, save_best_only=True)
     #plot_model(model, to_file="architecture.png")
     model.fit(x_train, y_train, epochs=nr_epochs, batch_size=batch,\
@@ -96,10 +94,10 @@ def train(x_train, y_train, image_shape):
 
 def main():
     image_shape = (96, 96, 3)
-    datadir = "/home/pieter/projects/engagement-l2tor/data/emotions/"
+    datadir = "/home/awolfert/projects/engagement-l2tor/data/emotions/"
     prep = Preprocessing(datadir, "x_train.txt", "x_test.txt",\
         "y_train.txt", "y_test.txt")
-    x_train, y_train = prep.getTrainData(trim=False, image_shape)
+    x_train, y_train = prep.getTrainData(trim=False, img_shape=image_shape)
     train(x_train, y_train, image_shape)
 
 if __name__=="__main__":
