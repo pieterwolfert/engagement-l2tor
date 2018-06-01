@@ -1,6 +1,5 @@
 import numpy as np
 import csv
-import matplotlib.pyplot as plt
 from scipy.misc import imread
 from scipy.misc import imresize
 
@@ -93,6 +92,6 @@ def main():
     prep = Preprocessing(datadir, "x_train3.txt", "x_test3.txt", "x_val3.txt",\
         "y_train3.txt", "y_test3.txt", "y_val3.txt")
     xtrain, ytrain, xval, yval = prep.getTrainData(True, (128,128))
-    
+
 if __name__=="__main__":
     main()
