@@ -24,23 +24,27 @@ def precisionsMultilabel(pred, y_test):
     labels = ["Curiosity", "Uncertainty", "Excitement", "Happiness",\
         "Surprise", "Disgust", "Fear", "Frustration"]
     table = []
+    f1_average = []
     for i, item in enumerate(labels):
         precision = precision_score(column(y_test, i), column(y_test_pred, i))
         recall = recall_score(column(y_test, i), column(y_test_pred, i))
         f1 = f1_score(column(y_test, i), column(y_test_pred, i))
+        f1_average.append(f1.astype(np.float))
         table.append([item, precision, recall, f1])
+    print("F1 Average over all Labels: {}".format(np.mean(f1_average)))
     print(tabulate(table, headers=(["Label", "Precision", "Recall", "F1"])))
+
 
 def column(matrix, i):
     return [int(row[i]) for row in matrix]
 
-def runInference():
+def runInference(prep):
     #model 1
     x_test, y_test = prep.getTestData(img_shape=(96,96))
-    with open('./models/model_json9696.txt', 'r') as f:
+    with open('./models/model_structure_json.txt', 'r') as f:
         ymlmodel = f.read()
     model = model_from_json(ymlmodel)
-    model.load_weights('./models/emotions9696_200_256.hdf5')
+    model.load_weights('./models/emotions200200_200_256.hdf5')
     model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['accuracy'])
     pred = model.predict(x_test)
     print("Results of 96x96 pixels classifier: \n")
@@ -50,7 +54,7 @@ def runInference():
     with open('./models/model_json.txt', 'r') as f:
         ymlmodel = f.read()
     model = model_from_json(ymlmodel)
-    model.load_weights('./models/emotions.hdf5')
+    model.load_weights('./models/emotions128128_200_256.hdf5')
     model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['accuracy'])
     pred2 = model.predict(x_test)
     print("Results of 128x128 pixels classifier: \n")
@@ -58,20 +62,12 @@ def runInference():
     combined_predictions = (np.add(np.array(pred), np.array(pred2))) / 2
     print("Results of the two combined: \n")
     precisionsMultilabel(combined_predictions, y_test)
-    #score = model.evaluate(x_test, y_test, verbose=0)
-    #print("%s: %.2f%%" % (model.metrics_names[1], score[1]*100))
-    #precisionsMultilabel(pred, y_test)
 
 def main():
     datadir = "/home/pieter/projects/engagement-l2tor/data/emotions/"
     prep = Preprocessing(datadir, "x_train.txt", "x_test.txt",\
         "y_train.txt", "y_test.txt")
-    #runInference(prep)
-    x_train, y_train = prep.getTrainData(True, (96,96))
-    tot = len(y_train)
-    for i in range(8):
-        print(np.sum(y_train[:,i].astype(np.float)))
-
+    runInference(prep)
 
 if __name__ == '__main__':
     main()

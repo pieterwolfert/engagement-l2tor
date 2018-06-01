@@ -9,7 +9,6 @@ from keras.models import Model
 from keras.callbacks import CSVLogger, ReduceLROnPlateau, ModelCheckpoint
 from keras.optimizers import Adam, SGD
 from keras.layers.normalization import BatchNormalization
-import matplotlib.pyplot as plt
 
 def getmodel(image_shape):
     #part 1
@@ -73,7 +72,7 @@ def getmodel(image_shape):
 
     x = Conv2D(64, (2, 2), strides=(2, 2), use_bias=False)(x)
     x = GlobalAveragePooling2D()(x)
-    output = Dense(8, activation='softmax', name='predictions')(x)
+    output = Dense(8, activation='sigmoid', name='predictions')(x)
     model = Model(inputs=img_input, outputs=output)
     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['accuracy'])
@@ -84,13 +83,19 @@ def train(x_train, y_train, image_shape):
     batch = 256
     model = getmodel(image_shape)
     lr_plateau = ReduceLROnPlateau(monitor='val_loss', patience=3, verbose=1, factor=0.5)
-    checkpoint = ModelCheckpoint(filepath='./models/' + 'emotions9696_' + str(nr_epochs) +\
+    checkpoint = ModelCheckpoint(filepath='./models/' + 'emotions200200_' + str(nr_epochs) +\
                             '_' + str(batch) + '.hdf5',\
                              verbose=1, save_best_only=True)
     #plot_model(model, to_file="architecture.png")
     model.fit(x_train, y_train, epochs=nr_epochs, batch_size=batch,\
         callbacks=[lr_plateau, checkpoint],\
          validation_split=0.2)
+
+def modelStructure(image_shape):
+    model = getmodel(image_shape)
+    json_ml = model.to_json()
+    with open('./models/model_structure_json.txt', 'w') as f:
+        f.write(json_ml)
 
 def main():
     image_shape = (96, 96, 3)
@@ -99,6 +104,7 @@ def main():
         "y_train.txt", "y_test.txt")
     x_train, y_train = prep.getTrainData(trim=False, img_shape=image_shape)
     train(x_train, y_train, image_shape)
+    #modelStructure(image_shape)
 
 if __name__=="__main__":
     main()

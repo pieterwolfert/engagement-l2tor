@@ -40,7 +40,7 @@ class Preprocessing():
 
 
     def getTestData(self, img_shape):
-        trim_size = 1000
+        trim_size = 2000
         img_size = (img_shape[0],img_shape[1])
         y_test = []
         with open(self.datadir + self.y_test) as f:
