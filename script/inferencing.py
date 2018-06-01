@@ -39,6 +39,7 @@ def column(matrix, i):
     return [int(row[i]) for row in matrix]
 
 def runInference(prep):
+    """
     #model 1
     x_test, y_test = prep.getTestData(img_shape=(96,96))
     with open('./models/model_structure_json.txt', 'r') as f:
@@ -48,25 +49,27 @@ def runInference(prep):
     model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['accuracy'])
     pred = model.predict(x_test)
     print("Results of 96x96 pixels classifier: \n")
-    precisionsMultilabel(pred, y_test)
+    precisionsMultilabel(pred, y_test)"""
     #model 2
     x_test, y_test = prep.getTestData(img_shape=(128,128))
     with open('./models/model_json.txt', 'r') as f:
         ymlmodel = f.read()
     model = model_from_json(ymlmodel)
-    model.load_weights('./models/emotions128128_200_256.hdf5')
+    model.load_weights('./models/emotions128128v2_200_256.hdf5')
     model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['accuracy'])
     pred2 = model.predict(x_test)
     print("Results of 128x128 pixels classifier: \n")
     precisionsMultilabel(pred2, y_test)
-    combined_predictions = (np.add(np.array(pred), np.array(pred2))) / 2
-    print("Results of the two combined: \n")
-    precisionsMultilabel(combined_predictions, y_test)
+
+    #combined_predictions = (np.add(np.array(pred), np.array(pred2))) / 2
+    #print("Results of the two combined: \n")
+    #precisionsMultilabel(combined_predictions, y_test)
 
 def main():
     datadir = "/home/pieter/projects/engagement-l2tor/data/emotions/"
-    prep = Preprocessing(datadir, "x_train.txt", "x_test.txt",\
-        "y_train.txt", "y_test.txt")
+    prep = Preprocessing(datadir, "x_train3.txt", "x_test3.txt",\
+        "x_val3.txt", "y_train3.txt"\
+        "y_val3.txt", "y_test3.txt")
     runInference(prep)
 
 if __name__ == '__main__':

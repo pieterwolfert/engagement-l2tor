@@ -13,34 +13,56 @@ class PrepareData:
         x           -- filelist of movieclips + framename
         filelist    -- filelist min movieclips, used for label generation"""
         self.datadir = datadir
+        print("Found datadir!")
         self.x, self.filelist = self.generateFileList()
+        print("Filelist generated!")
         self.y = self.generateLabelList(self.getLabelsDict(), self.filelist)
         #shuffle that list for the split
-        c = list(zip(self.x, self.y))
-        random.shuffle(c)
-        self.x, self.y = zip(*c)
         self.createSplits(self.x, self.y)
+        print("Writing split finished!")
 
     def createSplits(self, x, y, split=[.6, .2, .2]):
         """Creates splits of the files based on the given split."""
-        self.x_train = x[:int(len(x)*(split[0] + split[1]))]
-        self.x_test  = x[int(len(x)*(split[0] + split[1])+1):]
-        self.y_train = y[:int(len(x)*(split[0] + split[1]))]
-        self.y_test  = y[int(len(x)*(split[0] + split[1]))+1:]
+        self.x_train = x[:int(len(x)*(split[0]))]
+        self.x_val  = x[int(len(x)*(split[0]))+1:int(len(x)*(split[0]+split[1]))]
+        self.x_test   = x[int(len(x)*(split[0]+split[1])):]
+        self.y_train = y[:int(len(x)*(split[0]))]
+        self.y_val  = y[int(len(x)*(split[0]))+1:int(len(x)*(split[0]+split[1]))]
+        self.y_test   = y[int(len(x)*(split[0]+split[1])):]
+
+        c = list(zip(self.x_train, self.y_train))
+        random.shuffle(c)
+        self.x_train, self.y_train = zip(*c)
+
+        c = list(zip(self.x_test, self.y_test))
+        random.shuffle(c)
+        self.x_test, self.y_test = zip(*c)
+
+        c = list(zip(self.x_val, self.y_val))
+        random.shuffle(c)
+        self.x_val, self.y_val = zip(*c)
+
         print(len(self.y_train), len(self.x_train))
         print(len(self.y_test), len(self.x_test))
-        with open('/home/pieter/projects/engagement-l2tor/data/emotions/x_train.txt', 'a') as f:
+        print(len(self.y_val), len(self.x_val))
+        with open('/home/pieter/projects/engagement-l2tor/data/emotions/x_train3.txt', 'a') as f:
             for x in self.x_train:
                 f.write(x + '\n')
-        with open('/home/pieter/projects/engagement-l2tor/data/emotions/x_test.txt', 'a') as f:
+        with open('/home/pieter/projects/engagement-l2tor/data/emotions/x_test3.txt', 'a') as f:
             for x in self.x_test:
                 f.write(x + '\n')
-        with open("/home/pieter/projects/engagement-l2tor/data/emotions/y_train.txt", "a", newline='\n') as fp:
+        with open('/home/pieter/projects/engagement-l2tor/data/emotions/x_val3.txt', 'a') as f:
+            for x in self.x_val:
+                f.write(x + '\n')
+        with open("/home/pieter/projects/engagement-l2tor/data/emotions/y_train3.txt", "a", newline='\n') as fp:
             wr = csv.writer(fp, dialect='excel')
             wr.writerows(self.y_train)
-        with open("/home/pieter/projects/engagement-l2tor/data/emotions/y_test.txt", "a", newline='\n') as fp:
+        with open("/home/pieter/projects/engagement-l2tor/data/emotions/y_test3.txt", "a", newline='\n') as fp:
             wr = csv.writer(fp, dialect='excel')
             wr.writerows(self.y_test)
+        with open("/home/pieter/projects/engagement-l2tor/data/emotions/y_val3.txt", "a", newline='\n') as fp:
+            wr = csv.writer(fp, dialect='excel')
+            wr.writerows(self.y_val)
 
     def getData(self):
         img = self.loadImage(self.x[1])
@@ -102,7 +124,7 @@ class PrepareData:
         return filelist
 
 def main():
-    data_dir = "./data/emoreact/"
+    data_dir = "/home/pieter/data/emoreact/"
     prep = PrepareData(data_dir)
 
 if __name__=="__main__":

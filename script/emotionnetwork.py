@@ -78,18 +78,18 @@ def getmodel(image_shape):
     model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['accuracy'])
     return model
 
-def train(x_train, y_train, image_shape):
+def train(x_train, y_train, x_val, y_val, image_shape):
     nr_epochs = 200
-    batch = 256
+    batch = 512
     model = getmodel(image_shape)
     lr_plateau = ReduceLROnPlateau(monitor='val_loss', patience=3, verbose=1, factor=0.5)
-    checkpoint = ModelCheckpoint(filepath='./models/' + 'emotions200200_' + str(nr_epochs) +\
+    checkpoint = ModelCheckpoint(filepath='./models/' + 'emotions128128v3_' + str(nr_epochs) +\
                             '_' + str(batch) + '.hdf5',\
                              verbose=1, save_best_only=True)
     #plot_model(model, to_file="architecture.png")
     model.fit(x_train, y_train, epochs=nr_epochs, batch_size=batch,\
         callbacks=[lr_plateau, checkpoint],\
-         validation_split=0.2)
+         validation_data=(x_val, y_val))
 
 def modelStructure(image_shape):
     model = getmodel(image_shape)
@@ -98,12 +98,12 @@ def modelStructure(image_shape):
         f.write(json_ml)
 
 def main():
-    image_shape = (96, 96, 3)
+    image_shape = (128, 128, 3)
     datadir = "/home/awolfert/projects/engagement-l2tor/data/emotions/"
-    prep = Preprocessing(datadir, "x_train.txt", "x_test.txt",\
-        "y_train.txt", "y_test.txt")
-    x_train, y_train = prep.getTrainData(trim=False, img_shape=image_shape)
-    train(x_train, y_train, image_shape)
+    prep = Preprocessing(datadir, "x_train3.txt", "x_test3.txt", "x_val3.txt",\
+        "y_train3.txt", "y_test3.txt", "y_val3.txt")
+    x_train, y_train, x_val, y_val = prep.getTrainData(trim=True, img_shape=image_shape)
+    train(x_train, y_train, x_val, y_val, image_shape)
     #modelStructure(image_shape)
 
 if __name__=="__main__":
