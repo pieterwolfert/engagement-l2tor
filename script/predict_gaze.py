@@ -1,3 +1,5 @@
+from __future__ import division
+
 import numpy as np
 from typing import List, NewType, Union, Tuple
 import time
