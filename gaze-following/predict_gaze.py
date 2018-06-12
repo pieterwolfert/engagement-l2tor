@@ -12,6 +12,12 @@ import sys
 sys.path.append('/home/pieter/projects/caffe/python')
 import caffe
 
+#locations of files
+PLACES_MEAN_RESIZE = 'gaze-following/data/places_mean_resize.mat'
+IMAGENET_MEAN = 'gaze-following/data/imagenet_mean_resize.mat'
+MODEL_DEF = 'gaze-following/data/deploy_demo.prototxt'
+MODEL_WEIGHTS = 'gaze-following/data/binary_w.caffemodel'
+
 class Gaze():
     def __init__(self, model_def: str, model_weights: str):
         self.network = caffe.Net(model_def, model_weights, caffe.TEST)
@@ -92,8 +98,8 @@ class Gaze():
         im_face = img[y1:y2, x1:x2, :]
 
         #subtract mean from images
-        places_mean = sio.loadmat('data/model/places_mean_resize.mat')
-        imagenet_mean = sio.loadmat('data/model/imagenet_mean_resize.mat')
+        places_mean = sio.loadmat(PLACES_MEAN_RESIZE)
+        imagenet_mean = sio.loadmat(IMAGENET_MEAN)
         places_mean = places_mean['image_mean']
         imagenet_mean = imagenet_mean['image_mean']
 
@@ -222,10 +228,8 @@ class Gaze():
         return input_image_resize, eye_image_resize
 
 if __name__ == '__main__':
-    model_def =\
-     '/home/pieter/projects/engagement-l2tor/data/model/deploy_demo.prototxt'
-    model_weights =\
-     '/home/pieter/projects/engagement-l2tor/data/model/binary_w.caffemodel'
+    model_def = MODEL_DEF
+    model_weights = MODEL_WEIGHTS
     gazemachine = Gaze(model_def, model_weights)
     start = time.time()
     image = imread('script/images/5.jpg')

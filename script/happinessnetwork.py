@@ -99,7 +99,7 @@ def modelStructure(image_shape):
 
 def main():
     image_shape = (128, 128, 3)
-    datadir = "/home/awolfert/projects/engagement-l2tor/data/emotions/"
+    datadir = "/home/pieter/projects/engagement-l2tor/data/emotions/"
     prep = Preprocessing(datadir, "x_train3.txt", "x_test3.txt", "x_val3.txt",\
         "y_train3.txt", "y_test3.txt", "y_val3.txt")
     x_train, y_train, x_val, y_val = prep.getTrainData(trim=True, img_shape=image_shape)
