@@ -13,10 +13,10 @@ sys.path.append('/home/pieter/projects/caffe/python')
 import caffe
 
 #locations of files
-PLACES_MEAN_RESIZE = 'gaze-following/data/places_mean_resize.mat'
-IMAGENET_MEAN = 'gaze-following/data/imagenet_mean_resize.mat'
-MODEL_DEF = 'gaze-following/data/deploy_demo.prototxt'
-MODEL_WEIGHTS = 'gaze-following/data/binary_w.caffemodel'
+PLACES_MEAN_RESIZE = 'gaze-following/model/places_mean_resize.mat'
+IMAGENET_MEAN = 'gaze-following/model/imagenet_mean_resize.mat'
+MODEL_DEF = 'gaze-following/model/deploy_demo.prototxt'
+MODEL_WEIGHTS = 'gaze-following/model/binary_w.caffemodel'
 
 class Gaze():
     def __init__(self, model_def: str, model_weights: str):

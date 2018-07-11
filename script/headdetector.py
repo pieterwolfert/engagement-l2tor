@@ -55,18 +55,27 @@ def pythonGaze():
     model_def = '/home/pieter/projects/engagement-l2tor/data/model/deploy_demo.prototxt'
     model_weights = '/home/pieter/projects/engagement-l2tor/data/model/binary_w.caffemodel'
     gazemachine = Gaze(model_def, model_weights)
-    faceCascade=cv2.CascadeClassifier('/home/pieter/projects/engagement-l2tor/data/haarcascade_frontalface_alt.xml')
+    sidefaceCascade=cv2.CascadeClassifier('/home/pieter/projects/engagement-l2tor/data/lbpcascade_profileface.xml')
+    faceCascade = cv2.CascadeClassifier('/home/pieter/projects/engagement-l2tor/data/haarcascade_frontalface_alt.xml')
     eye_cascade = cv2.CascadeClassifier('/home/pieter/projects/engagement-l2tor/data/haarcascade_eye.xml')
     print(faceCascade.empty())
-    video = cv2.VideoCapture(0)
+    mv = "/home/pieter/data/l2tor_eng_set/01_P/01_P_L1.MTS"
+    video = cv2.VideoCapture(mv)
+    video.set(cv2.CAP_PROP_POS_MSEC,360*1000)
+    #video = cv2.VideoCapture('/home/pieter/202024_les2_front.m4v')
     while True:
         # Capture frame-by-frame
         #time.sleep(1)
         ret, frame = video.read()
+        frame[:,:,2] += 10
         x_frame = np.shape(frame)[1]
         y_frame = np.shape(frame)[0]
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = faceCascade.detectMultiScale(gray, 1.1, 3)
+        if len(faces) == 0:
+            faces = sidefaceCascade.detectMultiScale(gray, 1.1, 3)
+        if len(faces) == 0:
+            faces = sidefaceCascade.detectMultiScale(np.fliplr(gray), 1.1, 3)
         # Draw a rectangle around the faces
         x_face = 0
         y_face = 0
