@@ -3,6 +3,7 @@ import cv2
 import time
 import sys
 import csv
+from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip, ffmpeg_resize
 from PIL import Image
 sys.path.insert(0, '/home/pieter/projects/engagement-l2tor/gaze-following')
 from predict_gaze import Gaze
@@ -15,10 +16,13 @@ def pythonGaze(video, starttime, duration):
     sidefaceCascade=cv2.CascadeClassifier('/home/pieter/projects/engagement-l2tor/data/lbpcascade_profileface.xml')
     faceCascade = cv2.CascadeClassifier('/home/pieter/projects/engagement-l2tor/data/haarcascade_frontalface_alt.xml')
     eye_cascade = cv2.CascadeClassifier('/home/pieter/projects/engagement-l2tor/data/haarcascade_eye.xml')
+    print(video)
+    ffmpeg_extract_subclip(video, starttime, starttime+duration, targetname="test.mp4")
+    ffmpeg_resize("test.mp4", "test3.mp4", [720, 480])
+    video = "test3.mp4"
     video = cv2.VideoCapture(video)
-    video.set(cv2.CAP_PROP_POS_MSEC,starttime)
     video.set(cv2.CAP_PROP_FRAME_WIDTH, 400)
-    for i in range(duration):
+    while True:
         ret, frame = video.read()
         frame[:,:,2] += 10
         x_frame = np.shape(frame)[1]
@@ -54,17 +58,17 @@ def pythonGaze(video, starttime, duration):
 
 def main():
     #duration in number of frames (25 fps, 10 seconds of video)
-    duration = 250
+    duration = 10
     clips = []
     with open("/home/pieter/data/l2tor_eng_set/start_times.csv", "r", newline='\n') as fp:
         wr = csv.reader(fp)
         for row in wr:
             clips.append(row)
-    for i in clips[:1]:
+    for i in clips[1:2]:
         foldername = i[0][:4] + "/"
         clip = "/home/pieter/data/l2tor_eng_set/" + foldername + i[0]
-        starttime = (int(i[2]) * 60000) + (int(i[3]) *1000)
-        pythonGaze(clip, starttime, 250)
+        starttime = (int(i[2]) * 60) + int(i[3])
+        pythonGaze(clip, starttime, duration)
 
 
 if __name__=="__main__":
