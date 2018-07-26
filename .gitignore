@@ -1,4 +1,5 @@
 data/
+statplots/
 *.pyc
 *.ipynb_checkpoints/
 architecture.png
