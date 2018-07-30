@@ -70,5 +70,13 @@ y <- gazestatistics[[6]]
 cor.test(x,y)
 plot(x,y, main = "NUMBER OF GAZES AT OTHER VERSUS ENGAGEMENT RATINGS", xlab = "number of gazes", ylab = "engagement", col = "blue")
 
+#whether smiling is correlated with high engagement
+smiling <- read_excel("projects/engagement-l2tor/gazestatistics.xlsx", sheet="smiling", col_names=FALSE)
+x <- smiling[[2]]
+y <- smiling[[3]]
+cor.test(x,y)
+
+plot(x,y, main = "PREDICTION OF SMILING VERSUS ENGAGEMENT", xlab = "smiling", ylab = "engagement", col = "blue")
+
 
 
