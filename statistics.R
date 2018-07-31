@@ -1,11 +1,11 @@
 gazestatistics <- read_excel("projects/engagement-l2tor/gazestatistics.xlsx", sheet="gaze2stats", col_names = FALSE)
 x <- gazestatistics[[3]]
 y <- gazestatistics[[6]]
-rcorr(x,y, type="pearson")
+cor.test(x,y)
 plot(x,y, main = "NUMBER OF GAZES AT ROBOT VERSUS ENGAGEMENT RATINGS", xlab = "number of gazes", ylab = "engagement", col="blue")
 
 x <-gazestatistics[[4]]
-rcorr(x,y,type="pearson")
+cor.test(x,y)
 plot(x,y, main = "NUMBER OF GAZES AT TABLET VERSUS ENGAGEMENT RATINGS", xlab = "number of gazes", ylab = "engagement", col="blue")
 
 x <-gazestatistics[[5]]
