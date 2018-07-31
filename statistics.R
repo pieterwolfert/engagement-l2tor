@@ -78,5 +78,14 @@ cor.test(x,y)
 
 plot(x,y, main = "PREDICTION OF SMILING VERSUS ENGAGEMENT", xlab = "smiling", ylab = "engagement", col = "blue")
 
+#does movement correlate with engagement?
+smiling <- read_excel("projects/engagement-l2tor/gazestatistics.xlsx", sheet="smiling", col_names=TRUE)
+x <- smiling[[3]]
+y <- smiling[[5]]
+cor.test(x,y)
+plot(x,y, main = "BODY MOVEMENT VERSUS ENGAGEMENT", ylab = "movement", xlab = "engagement", col = "blue")
 
 
+z <- smiling[[6]]
+cor.test(x,z)
+plot(x,z, main = "HEAD MOVEMENT VERSUS ENGAGEMENT", ylab = "movement", xlab = "engagement", col="blue")
